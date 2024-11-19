@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorldChat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex items-center justify-center">
+    <div class="bg-white shadow-lg rounded-lg w-full max-w-md">
+        <!-- Username Section -->
+        <div id="username-section" class="p-4 fade-in">
+            <h1 class="text-2xl font-semibold mb-4">Welcome to WorldChat</h1>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Enter your username:</label>
+            <input type="text" id="username" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Username">
+            <button id="enter-chat" class="mt-3 w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">Enter Chat</button>
+            <p id="username-error" class="hidden text-red-500 text-sm mt-2">Please enter a valid username.</p>
+        </div>
+
+        <!-- Chat Section -->
+        <div id="chat-section" class="hidden flex flex-col h-96">
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-600 text-white">
+                <span id="user-display" class="font-semibold"></span>
+                <button id="logout" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded-md transition">Logout</button>
+            </div>
+            <div id="chat-window" class="flex-1 p-4 overflow-y-auto bg-gray-50"></div>
+            <div class="p-4 border-t">
+                <div class="flex">
+                    <input type="text" id="message-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Type a message">
+                    <button id="send-message" class="ml-3 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const usernameSection = document.getElementById('username-section');
+        const chatSection = document.getElementById('chat-section');
+        const enterChatButton = document.getElementById('enter-chat');
+        const sendMessageButton = document.getElementById('send-message');
+        const messageInput = document.getElementById('message-input');
+        const chatWindow = document.getElementById('chat-window');
+        const logoutButton = document.getElementById('logout');
+        const userDisplay = document.getElementById('user-display');
+        const usernameError = document.getElementById('username-error');
+        const socket = io();
+        let username = '';
+
+        enterChatButton.addEventListener('click', () => {
+            const usernameInput = document.getElementById('username').value.trim();
+            if (usernameInput) {
+                username = usernameInput;
+                userDisplay.textContent = `Welcome to WorldChat, ${username}!`;
+                usernameSection.classList.add('hidden');
+                chatSection.classList.remove('hidden');
+                chatSection.classList.add('fade-in');
+            } else {
+                usernameError.classList.remove('hidden');
+            }
+        });
+
+        sendMessageButton.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                socket.emit('chatMessage', { username, message });
+                messageInput.value = '';
+            }
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessageButton.click();
+            }
+        });
+
+        socket.on('chatMessage', (data) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('mb-2', 'p-2', 'bg-gray-200', 'rounded-md');
+            messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+
+        logoutButton.addEventListener('click', () => {
+            username = '';
+            chatSection.classList.add('hidden');
+            usernameSection.classList.remove('hidden');
+            document.getElementById('username').value = '';
+            chatWindow.innerHTML = '';
+            usernameError.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
